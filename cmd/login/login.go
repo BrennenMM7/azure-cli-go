@@ -1,27 +1,41 @@
+/*
+Copyright © 2023 NAME HERE <EMAIL ADDRESS>
+*/
 package login
 
 import (
-	"context"
+	"github.com/spf13/cobra"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription"
+	"github.com/BrennenMM7/azure-cli-go/pkg/auth"
 )
 
-const subscriptionID = "<subscription ID>"
+// loginCmd represents the login command
+var LoginCmd = &cobra.Command{
+	Use:   "login",
+	Short: "Login to Azure",
+	Long: `Login to Azure using the default browser. 
+		You will be prompted to enter your credentials.
+		
+		Example: az login
+	`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if auth.CheckIfAuthenticationFileExists() {
+			auth.DefaultLogin()
+		} else {
+			auth.FirstTimeLogin()
+		}
+	},
+}
 
-func main() {
-	cred, err := azidentity.NewDefaultAzureCredential(nil)
-	if err != nil {
-		// TODO: handle error
-	}
-	// Azure SDK Resource Management clients accept the credential as a parameter.
-	// The client will authenticate with the credential as necessary.
-	client, err := armsubscription.NewSubscriptionsClient(cred, nil)
-	if err != nil {
-		// TODO: handle error
-	}
-	_, err = client.Get(context.TODO(), subscriptionID, nil)
-	if err != nil {
-		// TODO: handle error
-	}
+func init() {
+
+	// Here you will define your flags and configuration settings.
+
+	// Cobra supports Persistent Flags which will work for this command
+	// and all subcommands, e.g.:
+	// loginCmd.PersistentFlags().String("foo", "", "A help for foo")
+
+	// Cobra supports local flags which will only run when this command
+	// is called directly, e.g.:
+	// loginCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
