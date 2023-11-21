@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	_ "github.com/Azure/azure-sdk-for-go/sdk/azidentity/cache"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
 )
 
+// DefaultLogin logs in using the authentication.json file and the default browser.
 func DefaultLogin() error {
 	//Read authentication.json
 	file, err := os.Open("authentication.json")
@@ -26,6 +27,7 @@ func DefaultLogin() error {
 	if err != nil {
 		fmt.Println(err)
 	}
+	identity.TenantID = ""
 	credentials, err := azidentity.NewInteractiveBrowserCredential(&azidentity.InteractiveBrowserCredentialOptions{
 		TokenCachePersistenceOptions: &azidentity.TokenCachePersistenceOptions{},
 		AuthenticationRecord:         identity,
@@ -34,17 +36,17 @@ func DefaultLogin() error {
 		fmt.Println(err)
 	}
 
-	accessToken, err := credentials.GetToken(context.Background(), policy.TokenRequestOptions{
-		Scopes: []string{"https://management.azure.com/.default"},
-	})
+	clientFactory, err := armsubscriptions.NewClient(credentials, nil)
 	if err != nil {
 		fmt.Println(err)
 	}
-
-	fmt.Println(accessToken.ExpiresOn)
+	pager, err := clientFactory.Get(context.Background(), "", nil)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(pager.DisplayName)
 
 	return nil
-
 }
 
 // FirstTimeLogin logs in for the first time and saves the authentication.json file
@@ -79,14 +81,18 @@ func FirstTimeLogin() error {
 		return err
 	}
 
+	fmt.Println("Initial login successful. Authentication file created.")
+
 	return nil
 }
 
 // CheckIfAuthenticationFileExists checks if authentication.json exists
 func CheckIfAuthenticationFileExists() bool {
-	if _, err := os.Stat("authentication.json"); os.IsExist(err) {
-		return true
-	} else {
+	if _, err := os.Stat("authentication.json"); os.IsNotExist(err) {
+		return false // File does not exist
+	} else if err != nil {
 		return false
+	} else {
+		return true // File exists
 	}
 }
